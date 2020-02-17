@@ -6,8 +6,6 @@ namespace ZipZip.Workers
 {
     internal sealed class ZipZipCompress : ZipZipWorkerBase<byte[], MemoryStream>
     {
-        
-
         protected override MemoryStream ProcessChunk(byte[] chunk)
         {
             var memoryStream = new MemoryStream();
@@ -28,8 +26,8 @@ namespace ZipZip.Workers
 
         protected override void WriteChunk(Stream _outputStream, MemoryStream chunk)
         {
-            _outputStream.Write(BitConverter.GetBytes(chunk.Length), 0,
-                sizeof(long)); //// https://social.msdn.microsoft.com/Forums/en-US/9d15ca74-3db7-478f-8f29-3579ef7fae5c/how-to-read-a-long-with-filestream
+            _outputStream.Write(BitConverter.GetBytes((int)chunk.Length), 0,
+                sizeof(int)); //// https://social.msdn.microsoft.com/Forums/en-US/9d15ca74-3db7-478f-8f29-3579ef7fae5c/how-to-read-a-long-with-filestream
 
             chunk.CopyTo(_outputStream);
         }

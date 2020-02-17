@@ -17,11 +17,11 @@ namespace ZipZip.Workers
         protected override bool ReadChunk(Stream stream, out MemoryStream chunk)
         {
             chunk = null;
-            var bytes = new byte[8];
-            if (stream.Read(bytes, 0, 8) == 0) return false;
-            long length = BitConverter.ToInt64(bytes, 0);
+            var bytes = new byte[4];
+            if (stream.Read(bytes, 0, 4) == 0) return false;
+            int length = BitConverter.ToInt32(bytes, 0);
             var buffer = new byte[length];
-            stream.Read(buffer, 0, (int) length); //todo: длина должна быть int!
+            stream.Read(buffer, 0, length);
             chunk = new MemoryStream(buffer);
             return true;
         }

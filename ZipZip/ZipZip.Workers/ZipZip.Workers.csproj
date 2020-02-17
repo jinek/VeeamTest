@@ -39,7 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccessBlockingDataPool.cs" />
-    <Compile Include="CollectionResetEvents.cs" />
+    <Compile Include="WaitersCollection.cs" />
     <Compile Include="IZipZipWorker.cs" />
     <Compile Include="PoolIdea.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

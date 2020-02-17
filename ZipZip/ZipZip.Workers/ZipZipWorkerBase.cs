@@ -8,7 +8,7 @@ namespace ZipZip.Workers
 {
     internal abstract class ZipZipWorkerBase<TInput,TOutput> : IZipZipWorker
     {
-        private readonly AccessBlockingDataPool<TInput> _inputBuffer;
+        public readonly AccessBlockingDataPool<TInput> _inputBuffer;
         private readonly FileStream _inputStream;
 
         private readonly AccessBlockingDataPool<TOutput> _outputBuffer; 
@@ -19,26 +19,27 @@ namespace ZipZip.Workers
 
         private readonly ThreadManager _threadManager = new ThreadManager();
 
-
         protected ZipZipWorkerBase(string inputFilePath,string outputFilePath)
         {
             _inputStream = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read);
             
             _outputStream = new FileStream(outputFilePath, FileMode.Create);
             
-            _inputBuffer = new AccessBlockingDataPool<TInput>(BufferSize,false);
-            _outputBuffer = new AccessBlockingDataPool<TOutput>(BufferSize, true);
+            _inputBuffer = new AccessBlockingDataPool<TInput>(BufferSize,false,this);
+            _outputBuffer = new AccessBlockingDataPool<TOutput>(BufferSize, true,this);
         }
 
         private static int BufferSize => MaxWorkerThreads * BufferSizeFromCPUNumberMultiplier;
 
         protected const int BlockSize = 1024*1024;
+        
         private const int BufferSizeFromCPUNumberMultiplier = 3;
 
         private static int MaxWorkerThreads => Environment.ProcessorCount;
 
         public void Dispose()
         {
+            //dispose тут по сути по приколу, его можно вызывать только по завершению вызова Process, для нашей задачи это подходит
             _threadManager.Dispose();
             _inputStream.Dispose();
             _outputStream.Dispose();
@@ -56,7 +57,10 @@ namespace ZipZip.Workers
             _threadManager.RunThread(() =>
             {
                 var order = 0;
-                while (ReadChunk(_inputStream, out TInput chunk)) _inputBuffer.Add(chunk, order++);
+                while (ReadChunk(_inputStream, out TInput chunk))
+                {
+                    _inputBuffer.Add(chunk, order++);
+                }
 
                 _finishBlock = order;
             });
@@ -69,7 +73,7 @@ namespace ZipZip.Workers
             for (var i = 0; i < MaxWorkerThreads; i++)
                 _threadManager.RunThread(() =>
                 {
-                    while (true)//todo: будет оборвано дислоузом
+                    while (true)
                     {
                         TInput chunk = _inputBuffer.Pop(out int order);
 
@@ -87,9 +91,9 @@ namespace ZipZip.Workers
                 while (order!=_finishBlock)
                 {
                     TOutput chunk = _outputBuffer.Pop(order++);
+                    
                     WriteChunk(_outputStream,chunk);
                 }
-                //todo: надо дождаться завершения
         }
         
         private void WritePool()

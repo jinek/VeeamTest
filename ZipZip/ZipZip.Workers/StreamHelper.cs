@@ -9,14 +9,16 @@ namespace ZipZip.Workers
         {
             var buffer = new byte[desiredSize];
             int read = stream.Read(buffer, 0, desiredSize);
-            
+
             if (read == desiredSize) return buffer;
-            
+
             if (read == 0) return new byte[0];
+
+            var truncatedArray = new byte[read];
             
-            var truncuatedArray = new byte[read];
-            Array.Copy(buffer, 0, truncuatedArray, 0, read);
-            return truncuatedArray;
+            Array.Copy(buffer, 0, truncatedArray, 0, read);
+            
+            return truncatedArray;
         }
     }
 }
