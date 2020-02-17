@@ -4,6 +4,10 @@
     {
         public static void Main(string[] args)
         {
+            using (var zipZipWorker = new ZipZipWorker(WorkerParameters.ParseUserInput(args)))
+            {
+                zipZipWorker.Process();
+            }
         }
     }
 }
