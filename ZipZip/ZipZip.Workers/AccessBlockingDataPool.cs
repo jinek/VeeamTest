@@ -5,50 +5,64 @@ namespace ZipZip.Workers
 {
     internal class AccessBlockingDataPool<T>
     {
-        private bool _orderMatters;
-        
-        private readonly FastConcurrentDictionary<int,T> _bag = new FastConcurrentDictionary<int, T>(/*Добавить capacity и concurrency*/);
-        
+        private readonly Locker _additionalPopLocksLock = new Locker();
+
+        private readonly Locker _additionalPushLocksLock = new Locker();
+
+        private readonly FastConcurrentDictionary<int, T> _bag;
+
+        private readonly bool _orderMatters;
+        private readonly CollectionResetEvents _popLocks = new CollectionResetEvents();
+
+        private readonly CollectionResetEvents _pushLocks = new CollectionResetEvents();
+
         private readonly ReadWriteLock _waitingAddLock = new ReadWriteLock();
         private readonly ReadWriteLock _waitingPopLock = new ReadWriteLock();
 
+        public AccessBlockingDataPool(int capacity, bool orderMatters)
+        {
+            _orderMatters = orderMatters;
+            _bag = new FastConcurrentDictionary<int, T>(capacity);
+        }
+
         public T Pop(int order)
         {
-            if(!_orderMatters)
-                throw new InvalidOperationException($"Call another overload of {nameof(Pop)} and receive {nameof(order)}");
+            if (!_orderMatters)
+                throw new InvalidOperationException(
+                    $"Call another overload of {nameof(Pop)} and receive {nameof(order)}");
 
-            T item=null;
-            
-            return PoolIdea.ThreadSafeAccessToPool<T>(true,
+            T item = default;
+
+            return PoolIdea.ThreadSafeAccessToPool(true,
                 false,
                 order,
                 _waitingAddLock,
-                () => !_bag.TryRemove(order,out item),
+                () => !_bag.TryRemove(order, out item),
                 _additionalPushLocksLock,
-                pushLocks,
+                _pushLocks,
                 _waitingPopLock,
-                () => item, 
+                () => item,
                 _popLocks);
         }
-        
+
         public T Pop(out int order)
         {
-            if(_orderMatters)
-                throw new InvalidOperationException($"Call another overload of {nameof(Pop)} and provide {nameof(order)}");
+            if (_orderMatters)
+                throw new InvalidOperationException(
+                    $"Call another overload of {nameof(Pop)} and provide {nameof(order)}");
 
-            var (returnedItem,returnedOrder) = PoolIdea.ThreadSafeAccessToPool<(T, order)>(false,
+            (T returnedItem, int returnedOrder) = PoolIdea.ThreadSafeAccessToPool<(T, int)>(false,
                 false,
                 -1,
                 _waitingAddLock,
                 () => _bag.Count == 0,
                 _additionalPushLocksLock,
-                pushLocks,
+                _pushLocks,
                 _waitingPopLock,
                 () =>
                 {
-                    T item = _bag.First(out order);
-                    _bag.RemoveFirst();
-                    return (order, item);
+                    T item = _bag.RemoveFirst(out int orderLocal);
+                    return (item, orderLocal);
                 }, _popLocks);
 
             order = returnedOrder;
@@ -59,11 +73,11 @@ namespace ZipZip.Workers
 
         public void Add(T item, int order)
         {
-            PoolIdea.ThreadSafeAccessToPool(false,
+            PoolIdea.ThreadSafeAccessToPool<object>(false,
                 _orderMatters,
                 order,
                 _waitingPopLock,
-                () => _bag.Count >= _bag.Capacity,
+                () => _bag.Count >= _bag.InitialCapacity,
                 _additionalPopLocksLock,
                 _popLocks,
                 _waitingAddLock,
@@ -71,7 +85,7 @@ namespace ZipZip.Workers
                 {
                     _bag.Add(order, item);
                     return null;
-                },_pushLocks);
+                }, _pushLocks);
         }
     }
 }

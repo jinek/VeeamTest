@@ -1,13 +1,15 @@
-﻿namespace ZipZip.Runner
+﻿using ZipZip.Workers;
+
+namespace ZipZip.Runner
 {
     internal class Program
     {
         public static void Main(string[] args)
         {
-            using (var zipZipWorker = new ZipZipWorker(WorkerParameters.ParseUserInput(args)))
-            {
-                zipZipWorker.Process();
-            }
+            bool compress=true;
+            string inputPath = @"C:\Temp2\9.0_Holger_shared_parts_Cost_of_change.bak";
+            string outputPath = @"C:\Temp2\ZipZipResult.zz";
+            ZipZipProcessing.Process(inputPath,outputPath,compress);
         }
     }
 }

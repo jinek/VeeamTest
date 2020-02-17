@@ -4,7 +4,7 @@ using ZipZip.Lockers;
 
 namespace ZipZip.Workers
 {
-    internal class PoolIdea
+    internal static class PoolIdea
     {
         public static T ThreadSafeAccessToPool<T>(bool waitThreadOrderMatters,
             bool releaseThreadOrderMatters,
@@ -12,10 +12,10 @@ namespace ZipZip.Workers
             ReadWriteLock readLockForWaiting,
             Func<bool> waitCondition,
             Locker additionalModifyWaitersLock,
-            SomeCollection waitersToWaitCollection,
+            CollectionResetEvents waitersToWaitCollection,
             ReadWriteLock writeLockForReleasing,
             Func<T> returnFunction,
-            SomeCollection waitersToReleaseCollection//todo: вместо этого можно сделать func, которая будет возвращать нужный ManualResetEvent
+            CollectionResetEvents waitersToReleaseCollection//todo: вместо этого можно сделать func, которая будет возвращать нужный ManualResetEvent
         )
         {
             //тут выполняем проверку можно ли сделать определённое действие с пулом и если нельзя, то усыпляем текущий поток, помещая его в  список ожидания        
@@ -23,10 +23,10 @@ namespace ZipZip.Workers
             {
                 while (waitCondition())
                 {
-                    ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+                    var manualResetEvent = new ManualResetEvent(false);
                     using (additionalModifyWaitersLock.Lock())
                     {
-                        waitersToWaitCollection.Enqueue(waitThreadOrderMatters?order:null,manualResetEvent);
+                        waitersToWaitCollection.Enqueue(waitThreadOrderMatters?order:(int?)null,manualResetEvent);
                     }
 
                     manualResetEvent.WaitOne();
@@ -37,7 +37,7 @@ namespace ZipZip.Workers
             using (writeLockForReleasing.WriteLock())
             {
                 T result = returnFunction();
-                var manualResetEvent = waitersToReleaseCollection.DequeueOrNullIfEmptyForOrderOnly(releaseThreadOrderMatters ? order : null);
+                ManualResetEvent manualResetEvent = waitersToReleaseCollection.DequeueOrNullOnlyIfOrderIsNull(releaseThreadOrderMatters ? order : (int?)null);
                 manualResetEvent?.Set();
                 return result;
             }            
