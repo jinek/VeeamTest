@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using ZipZip.Lockers;
 
 namespace ZipZip.Workers
@@ -24,11 +26,14 @@ namespace ZipZip.Workers
             
             _outputStream = new FileStream(outputFilePath, FileMode.Create);
             
-            _inputBuffer = new AccessBlockingDataPool<TInput>(MaxWorkerThreads * 3,false);
-            _outputBuffer = new AccessBlockingDataPool<TOutput>(MaxWorkerThreads * 3, true);
+            _inputBuffer = new AccessBlockingDataPool<TInput>(BufferSize,false);
+            _outputBuffer = new AccessBlockingDataPool<TOutput>(BufferSize, true);
         }
 
+        private static int BufferSize => MaxWorkerThreads * BufferSizeFromCPUNumberMultiplier;
+
         protected const int BlockSize = 1024*1024;
+        private const int BufferSizeFromCPUNumberMultiplier = 3;
 
         private static int MaxWorkerThreads => Environment.ProcessorCount;
 
@@ -64,11 +69,15 @@ namespace ZipZip.Workers
             for (var i = 0; i < MaxWorkerThreads; i++)
                 _threadManager.RunThread(() =>
                 {
-                    TInput chunk = _inputBuffer.Pop(out int order);
+                    while (true)//todo: будет оборвано дислоузом
+                    {
+                        TInput chunk = _inputBuffer.Pop(out int order);
 
-                    TOutput processedChunk = ProcessChunk(chunk);
+                        WritePool();
+                        TOutput processedChunk = ProcessChunk(chunk);
 
-                    _outputBuffer.Add(processedChunk, order);
+                        _outputBuffer.Add(processedChunk, order);
+                    }
                 });
         }
 
@@ -80,6 +89,17 @@ namespace ZipZip.Workers
                     TOutput chunk = _outputBuffer.Pop(order++);
                     WriteChunk(_outputStream,chunk);
                 }
+                //todo: надо дождаться завершения
+        }
+        
+        private void WritePool()
+        {
+            int outputCount = _outputBuffer._bag.Count;
+            int inputCount = _inputBuffer._bag.Count;
+
+            Debug.WriteLine(string.Concat(Enumerable.Repeat('|', inputCount)).PadRight(BufferSize,'.') +
+                            "            " + string.Concat(Enumerable.Repeat('|', outputCount))
+                                .PadRight(BufferSize,'.'));
         }
 
         protected abstract bool ReadChunk(Stream stream,out TInput chunk);

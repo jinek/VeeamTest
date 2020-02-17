@@ -1,4 +1,7 @@
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Threading;
 using ZipZip.Lockers;
 
 namespace ZipZip.Workers
@@ -9,7 +12,7 @@ namespace ZipZip.Workers
 
         private readonly Locker _additionalPushLocksLock = new Locker();
 
-        private readonly FastConcurrentDictionary<int, T> _bag;
+        public readonly FastConcurrentDictionary<int, T> _bag;
 
         private readonly bool _orderMatters;
         private readonly CollectionResetEvents _popLocks = new CollectionResetEvents();
@@ -27,65 +30,89 @@ namespace ZipZip.Workers
 
         public T Pop(int order)
         {
+            WriteDebug($"Retriving {order}");
+            
             if (!_orderMatters)
                 throw new InvalidOperationException(
                     $"Call another overload of {nameof(Pop)} and receive {nameof(order)}");
 
             T item = default;
 
-            return PoolIdea.ThreadSafeAccessToPool(true,
+            PoolIdea.ThreadSafeAccessToPool(true,
                 false,
                 order,
                 _waitingAddLock,
-                () => !_bag.TryRemove(order, out item),
+                () =>
+                {
+                    bool shouldWait = !_bag.TryRemove(order, out item);
+                    return (shouldWait,!shouldWait);
+                },
                 _additionalPushLocksLock,
                 _pushLocks,
                 _waitingPopLock,
-                () => item,
                 _popLocks);
+
+            return item;
         }
 
         public T Pop(out int order)
         {
+            WriteDebug($"Retrieving any");
+            
             if (_orderMatters)
                 throw new InvalidOperationException(
                     $"Call another overload of {nameof(Pop)} and provide {nameof(order)}");
 
-            (T returnedItem, int returnedOrder) = PoolIdea.ThreadSafeAccessToPool<(T, int)>(false,
+            T returnItem = default;
+            int returnedOrder = default;
+
+            PoolIdea.ThreadSafeAccessToPool(false,
                 false,
                 -1,
                 _waitingAddLock,
-                () => _bag.Count == 0,
+                () =>
+                {
+                    bool shouldWait = !_bag.TryRemoveFirst(out returnedOrder, out returnItem);
+                    return (shouldWait,!shouldWait);
+                },
                 _additionalPushLocksLock,
                 _pushLocks,
                 _waitingPopLock,
-                () =>
-                {
-                    T item = _bag.RemoveFirst(out int orderLocal);
-                    return (item, orderLocal);
-                }, _popLocks);
+                _popLocks);
 
+            WriteDebug($"Retrived {returnedOrder}");
+            
             order = returnedOrder;
-            return returnedItem;
+            return returnItem;
         }
 
         //todo: сделать AggressiveInline
 
         public void Add(T item, int order)
         {
-            PoolIdea.ThreadSafeAccessToPool<object>(false,
+            WriteDebug($"Adding item {order}");
+            PoolIdea.ThreadSafeAccessToPool(false,
                 _orderMatters,
                 order,
                 _waitingPopLock,
-                () => _bag.Count >= _bag.InitialCapacity,
-                _additionalPopLocksLock,
-                _popLocks,
-                _waitingAddLock,
                 () =>
                 {
-                    _bag.Add(order, item);
-                    return null;
-                }, _pushLocks);
+                    bool shouldWait = !_bag.AddOrNothingThenAndCheckIfNotFull(order, item);
+                    
+                    return (shouldWait,true);
+                },
+                _additionalPopLocksLock,
+                _popLocks,
+                _waitingAddLock, 
+                _pushLocks);
+        }
+
+        public void WriteDebug(string text)
+        {
+            return;
+            string poolName = !_orderMatters?"Input Pool: ": "Output Pool: ";
+            
+            Debug.WriteLine($"{poolName}: {text}                 {Thread.CurrentThread.ManagedThreadId}");
         }
     }
 }

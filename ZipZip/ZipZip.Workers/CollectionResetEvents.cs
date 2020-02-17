@@ -14,9 +14,12 @@ namespace ZipZip.Workers
             _dictionary.Add(order ?? _negativeIndex--, manualResetEvent);
         }
 
-        public ManualResetEvent DequeueOrNullOnlyIfOrderIsNull(int? order)
+        public ManualResetEvent DequeueOrNull(int? order)
         {
-            if (order != null) return _dictionary[(int) order];
+            if (order != null)
+            {
+                return _dictionary.TryGetValue((int) order, out ManualResetEvent result) ? result : null;
+            }
             
             if (_dictionary.Count == 0) return null;
 

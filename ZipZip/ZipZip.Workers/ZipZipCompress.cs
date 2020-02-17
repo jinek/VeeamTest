@@ -11,7 +11,7 @@ namespace ZipZip.Workers
         protected override MemoryStream ProcessChunk(byte[] chunk)
         {
             var memoryStream = new MemoryStream();
-            using (var gZipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+            using (var gZipStream = new GZipStream(memoryStream, CompressionMode.Compress,true))
             {
                 gZipStream.Write(chunk, 0, chunk.Length);
             }
