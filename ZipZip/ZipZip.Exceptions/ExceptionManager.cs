@@ -4,6 +4,10 @@ using System.Threading.Tasks;
 
 namespace ZipZip.Exceptions
 {
+    /// <summary>
+    ///     Handle all unhandled exception in application
+    ///     Does special processing for <see cref="UserErrorException"/>
+    /// </summary>
     public static class ExceptionManager
     {
         static ExceptionManager()
@@ -14,9 +18,9 @@ namespace ZipZip.Exceptions
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
         }
 
-        public static void CatchExceptionsFromNowAndForever()
+        public static void EnsureManagerInitialized()
         {
-            //it's just for calling the constructor, which is thread safe and will be called once only
+            //it's just for calling the constructor, which is thread safe and will be called once only - exactly what we want
         }
 
         private static void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -42,13 +46,12 @@ namespace ZipZip.Exceptions
             {
                 case UserErrorException userErrorException:
                     SayConsoleErrorAndExit(userErrorException.Message);
-                    ApplicationExit();
                     break;
                 default:
                     if (!IsDebug)
                         // ReSharper disable HeuristicUnreachableCode
 #pragma warning disable 162
-                        //todo: Add any kind of exception tracking, for example write to Windows Events and use Excellence Program or use Azure App Insights, DataDog etc 
+                        //todo: Add any kind of exception tracking, for example write to Windows Events and use Excellence Program ( Environment.FailFast(); ) or use Azure App Insights, DataDog etc
                         SayConsoleErrorAndExit(
                             "Error happened. We have already started working on this issue. Please, accept our apologizes.");
 #pragma warning restore 162
@@ -68,7 +71,7 @@ namespace ZipZip.Exceptions
 
         private static void ApplicationExit()
         {
-            Environment.Exit(1);
+            Environment.Exit(-1);
         }
 
         private const bool IsDebug =

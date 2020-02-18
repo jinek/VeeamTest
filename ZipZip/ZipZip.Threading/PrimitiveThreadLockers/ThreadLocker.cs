@@ -13,7 +13,7 @@ namespace ZipZip.Threading.PrimitiveThreadLockers
         }
 
         public struct LockerRelease : IDisposable
-        {
+        {//using struct to avoid GC
             private readonly object _lockObject;
 
             internal LockerRelease(object lockObject)

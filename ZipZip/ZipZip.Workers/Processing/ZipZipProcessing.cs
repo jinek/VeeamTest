@@ -1,5 +1,8 @@
-namespace ZipZip.Workers
+namespace ZipZip.Workers.Processing
 {
+    /// <summary>
+    ///     Use this class to compress or decompress data
+    /// </summary>
     public static class ZipZipProcessing
     {
         public static void Process(string inputPath, string outputPath, bool compress)

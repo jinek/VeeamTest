@@ -7,14 +7,22 @@ namespace ZipZip.Threading
     /// <summary>
     ///     Not thread-safe
     /// </summary>
-    public class ThreadManager : IDisposable
+    public class ThreadManager
     {
         private readonly List<Thread> _threads = new List<Thread>();
 
-        public void Dispose()
+        public void WaitAllToFinish()
         {
-            ReleaseUnmanagedResources();
-            GC.SuppressFinalize(this);
+            foreach (Thread thread in _threads)
+                try
+                {
+                    thread.Join();
+                }
+                catch (ThreadInterruptedException)
+                {
+                    throw new InvalidOperationException(
+                        "Currently we allow to dispose manager only after everything is has finished");
+                }
         }
 
         public void RunThread(Action action)
@@ -25,35 +33,6 @@ namespace ZipZip.Threading
             };
             _threads.Add(thread);
             thread.Start();
-        }
-
-        private void ReleaseUnmanagedResources()
-        {
-            foreach (Thread thread in _threads)
-            {
-                try
-                {
-                    thread.Abort();
-                }
-                catch (ThreadStateException)
-                {
-                    throw new InvalidOperationException("Currently we allow to dispose manager only after everything is has finished");
-                }
-
-                try
-                {
-                    thread.Join();
-                }
-                catch (ThreadInterruptedException)
-                {
-                    throw new InvalidOperationException("Currently we allow to dispose manager only after everything is has finished");
-                }
-            }
-        }
-
-        ~ThreadManager()
-        {
-            throw new InvalidOperationException("This manager is half implemented and must be Disposed explicitly");
         }
     }
 }

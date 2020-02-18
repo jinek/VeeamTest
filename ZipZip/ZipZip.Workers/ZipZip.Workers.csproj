@@ -11,6 +11,7 @@
     <AssemblyName>ZipZip.Workers</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -38,18 +39,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccessBlockingDataBuffer.cs" />
-    <Compile Include="WaitersCollection.cs" />
+    <Compile Include="DataBuffer\AccessBlockingDataBuffer.cs" />
+    <Compile Include="DataBuffer\BufferIdea.cs" />
+    <Compile Include="DataBuffer\ProcessingFinishedException.cs" />
+    <Compile Include="DataBuffer\WaitersCollection.cs" />
+    <Compile Include="DataBuffer\WaitersCollection.WaitersMode.cs" />
+    <Compile Include="Helpers\StreamHelper.cs" />
     <Compile Include="IZipZipWorker.cs" />
-    <Compile Include="BufferIdea.cs" />
+    <Compile Include="Processing\ZipZipCompress.cs" />
+    <Compile Include="Processing\ZipZipDecompress.cs" />
+    <Compile Include="Processing\ZipZipProcessing.cs" />
+    <Compile Include="Processing\ZipZipWorkerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StreamHelper.cs" />
-    <Compile Include="ZipZipCompress.cs" />
-    <Compile Include="ZipZipDecompress.cs" />
-    <Compile Include="ZipZipProcessing.cs" />
-    <Compile Include="ZipZipWorkerBase.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ZipZip.Exceptions\ZipZip.Exceptions.csproj">
+      <Project>{491413e0-7ffc-42c9-85ee-56de4485e776}</Project>
+      <Name>ZipZip.Exceptions</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ZipZip.Threading\ZipZip.Threading.csproj">
       <Project>{f59d7bde-143f-49c3-9078-818c795f7f9d}</Project>
       <Name>ZipZip.Threading</Name>

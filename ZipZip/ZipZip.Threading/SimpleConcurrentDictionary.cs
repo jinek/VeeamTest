@@ -6,8 +6,9 @@ namespace ZipZip.Threading
 {
     public class SimpleConcurrentDictionary<TKey, TValue>
     {
-        private readonly ReadWriteThreadLocker _threadLocker = new ReadWriteThreadLocker();
         private readonly Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
+        
+        private readonly ReadWriteThreadLocker _threadLocker = new ReadWriteThreadLocker();
 
         public SimpleConcurrentDictionary(int initialCapacity)
         {

@@ -1,22 +1,37 @@
 using System;
 using ZipZip.Threading;
 
-namespace ZipZip.Workers
+namespace ZipZip.Workers.DataBuffer
 {
     internal class AccessBlockingDataBuffer<T>
     {
+        private readonly WaitersCollection _addWaiters = new WaitersCollection();
         private readonly SimpleConcurrentDictionary<int, T> _internalBuffer;
-
         private readonly bool _orderMatters;
         private readonly WaitersCollection _pullWaiters = new WaitersCollection();
 
-        private readonly WaitersCollection _pushWaiters = new WaitersCollection();
-
+        /// <summary>
+        ///     See parameters description.
+        ///     For more information see description to <see cref="BufferIdea.ThreadSafeAccessToBuffer" />
+        /// </summary>
+        /// <param name="capacity">How much data items buffer can contain. Will freeze calling thread when exceeded</param>
+        /// <param name="orderMatters">Whether we want to pull data by order.</param>
         public AccessBlockingDataBuffer(int capacity, bool orderMatters)
         {
             _orderMatters = orderMatters;
             _internalBuffer = new SimpleConcurrentDictionary<int, T>(capacity);
         }
+
+        public void AbortAllWaiters()
+        {
+            _addWaiters.AbortWaiters();
+            _pullWaiters.AbortWaiters();
+        }
+
+        /// <summary>
+        ///     Pulls specific item from buffer. Release a frozen thread which is waiting buffer to become not so overflowed (if
+        ///     any)
+        /// </summary>
         public T Pull(int order)
         {
             if (!_orderMatters)
@@ -31,12 +46,15 @@ namespace ZipZip.Workers
                     bool shouldWait = !_internalBuffer.TryRemove(order, out item);
                     return (shouldWait, !shouldWait);
                 },
-                _pushWaiters,
+                _addWaiters,
                 _pullWaiters);
 
             return item;
         }
 
+        /// <summary>
+        ///     Pull any item from buffer. Release a frozen thread which is waiting buffer to become not so overflowed (if any)
+        /// </summary>
         public T Pull(out int order)
         {
             if (_orderMatters)
@@ -52,28 +70,30 @@ namespace ZipZip.Workers
                     bool shouldWait = !_internalBuffer.TryRemoveFirst(out returnedOrder, out returnItem);
                     return (shouldWait, !shouldWait);
                 },
-                _pushWaiters,
+                _addWaiters,
                 _pullWaiters);
 
             order = returnedOrder;
             return returnItem;
         }
 
+        /// <summary>
+        ///     Add data item to buffer. Also release a frozen thread which is waiting this data item to be in the buffer
+        /// </summary>
         public void Add(T item, int order)
         {
             WaitersCollection.WaitersMode waitersMode = _orderMatters
                 ? WaitersCollection.WaitersMode.ReleaseWaiterByOrder(order)
                 : WaitersCollection.WaitersMode.OrdersDoesNotMatter();
-            
+
             BufferIdea.ThreadSafeAccessToBuffer(waitersMode,
                 () =>
                 {
                     bool shouldWait = !_internalBuffer.AddOrNothingThenAndCheckIfNotFull(order, item);
-                    
                     return (shouldWait, true);
                 },
                 _pullWaiters,
-                _pushWaiters);
+                _addWaiters);
         }
     }
 }

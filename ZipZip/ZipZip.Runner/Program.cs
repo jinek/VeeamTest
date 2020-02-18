@@ -1,5 +1,6 @@
-﻿using ZipZip.Exceptions;
-using ZipZip.Workers;
+﻿using System.Linq;
+using ZipZip.Exceptions;
+using ZipZip.Workers.Processing;
 
 namespace ZipZip.Runner
 {
@@ -7,16 +8,18 @@ namespace ZipZip.Runner
     {
         public static void Main(string[] args)
         {
-            ExceptionManager.CatchExceptionsFromNowAndForever();
-
+            ExceptionManager.EnsureManagerInitialized();
+            
+            args = args.Where(str => !string.IsNullOrEmpty(str)).ToArray();
+            
             if (args.Length != 3)
                 UserErrorException.ThrowUserErrorException("There should be 3 arguments");
 
             bool compress = ParseMode(args[0]);
 
 
-            string inputPath = args[1] ?? throw new UserErrorException("Second argument must be input file name");
-            string outputPath = args[2] ?? throw new UserErrorException("Third argument must be output file name");
+            string inputPath = args[1];
+            string outputPath = args[2];
 
             ZipZipProcessing.Process(inputPath, outputPath, compress);
         }
