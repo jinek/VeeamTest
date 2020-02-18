@@ -1,8 +1,11 @@
 _Please, check scheme.png for short description._
 ---
 Warning! When compiling - use "RELEASE" mode to see user message in case of unexpected errors.
+
 ---
-###Description
+
+### Description
+
 In short, we use one thread for reading the file (idling while reading, see p.s.).
 Then it pushes chunk to input buffer.
 Then it goes to idle if buffer contains too much of (unprocessed) data.
@@ -16,8 +19,11 @@ And finally, if output buffer is overflowed, this worker thread locks (idle) aga
 And last, outputting thread (which writes output file), tries to pull a processed chunk from output buffer.
 If there is no specific chunk, it locks and waits until that specific chunk will appear in the output buffer.
 Finally, it writes chunk to file.
+
 ---
+
 ### Addition
+
 As seen, from the scheme, we have two buffers.
 They can be accessed from several threads, which means they can lock and release those threads.
 Using this locks/idling we are releasing a core (logical processor),
