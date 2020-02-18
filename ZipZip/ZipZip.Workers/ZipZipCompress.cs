@@ -6,10 +6,14 @@ namespace ZipZip.Workers
 {
     internal sealed class ZipZipCompress : ZipZipWorkerBase<byte[], MemoryStream>
     {
+        public ZipZipCompress(string inputFilePath, string outputFilePath) : base(inputFilePath, outputFilePath)
+        {
+        }
+
         protected override MemoryStream ProcessChunk(byte[] chunk)
         {
             var memoryStream = new MemoryStream();
-            using (var gZipStream = new GZipStream(memoryStream, CompressionMode.Compress,true))
+            using (var gZipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
             {
                 gZipStream.Write(chunk, 0, chunk.Length);
             }
@@ -26,16 +30,11 @@ namespace ZipZip.Workers
 
         protected override void WriteChunk(Stream _outputStream, MemoryStream chunk)
         {
-            _outputStream.Write(BitConverter.GetBytes((int)chunk.Length), 0,
-                sizeof(int)); //// https://social.msdn.microsoft.com/Forums/en-US/9d15ca74-3db7-478f-8f29-3579ef7fae5c/how-to-read-a-long-with-filestream
+            // https://social.msdn.microsoft.com/Forums/en-US/9d15ca74-3db7-478f-8f29-3579ef7fae5c/how-to-read-a-long-with-filestream
+            _outputStream.Write(BitConverter.GetBytes((int) chunk.Length), 0,
+                sizeof(int));
 
             chunk.CopyTo(_outputStream);
         }
-
-        public ZipZipCompress(string inputFilePath, string outputFilePath) : base(inputFilePath, outputFilePath)
-        {
-        }
     }
-
-    //todo: подставить checked для чисел
 }

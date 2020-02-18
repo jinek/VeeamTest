@@ -2,81 +2,32 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using ZipZip.Lockers;
+using ZipZip.Threading;
 
 namespace ZipZip.Workers
 {
     internal class WaitersCollection
     {
-        private readonly Locker _locker = new Locker();
+        private readonly Dictionary<int, ManualResetEvent> _dictionary = new Dictionary<int, ManualResetEvent>();
+        private readonly ThreadLocker _threadLocker = new ThreadLocker();
+        private int _negativeIndex = -1;
 
         public IDisposable LockOtherThreadsAccessingThisCollection()
         {
-            return _locker.Lock();
+            return _threadLocker.Lock();
         }
-        
-        public readonly struct AccessWaiter
-        {
-            //эта структура нужно просто для объяснения кода
-            
-            public static AccessWaiter OrdersDoesNotMatter()
-            {
-                return new AccessWaiter(false,false, -1);
-            }
-
-            public static AccessWaiter ReleaseWaiterByOrder(int order)
-            {
-                return new AccessWaiter(true,false, order);
-            }
-            
-            public static AccessWaiter CreateWaiterForOrder(int order)
-            {
-                return new AccessWaiter(false,true, order);
-            }
-            
-            private AccessWaiter(bool orderMattersForReleasingAThread, bool orderMattersForWaiting, int order)
-            {
-                OrderMattersForReleasingAThread = orderMattersForReleasingAThread;
-                OrderMattersForWaiting = orderMattersForWaiting;
-                Order = order;
-            }
-
-            public bool OrderMattersForReleasingAThread { get; }
-            public bool OrderMattersForWaiting { get; }
-            public int Order { get; }
-            
-
-            public WaitHandle CreateWaiter(WaitersCollection waitersCollection)
-            {
-                var manualResetEvent = new ManualResetEvent(false);//todo: можно ThreadStatic делать
-                
-                waitersCollection.CreateWaiter(OrderMattersForWaiting ? Order : (int?) null,manualResetEvent);
-
-                return manualResetEvent;
-            }
-
-            public void ReleaseWaiter(WaitersCollection waitersCollection)
-            {
-                waitersCollection.ReleaseWaiter(OrderMattersForReleasingAThread ? Order : (int?) null);
-            }
-        }
-        
-        private readonly Dictionary<int, ManualResetEvent> _dictionary;
-        private int _negativeIndex = -1;
 
         private void CreateWaiter(int? order, ManualResetEvent manualResetEvent)
         {
-            using (_locker.Lock())
+            using (_threadLocker.Lock())
             {
                 _dictionary.Add(order ?? _negativeIndex--, manualResetEvent);
-                Count = _dictionary.Count;
-                CountChanged();
             }
         }
 
         private void ReleaseWaiter(int? order)
         {
-            using (_locker.Lock())
+            using (_threadLocker.Lock())
             {
                 if (order != null)
                 {
@@ -84,8 +35,6 @@ namespace ZipZip.Workers
                     if (!tryGetValue) return;
                     _dictionary.Remove((int) order);
                     result.Set();
-                    Count = _dictionary.Count;
-                    CountChanged();
                     return;
                 }
 
@@ -97,18 +46,58 @@ namespace ZipZip.Workers
 
                 _dictionary.Remove(firstKey);
                 manualResetEvent.Set();
-                Count = _dictionary.Count;
-                CountChanged();
             }
         }
 
-        public int Count;
-
-        public WaitersCollection()
+        public readonly struct AccessWaiter
         {
-            _dictionary = new Dictionary<int, ManualResetEvent>();
-        }
+            //эта структура нужно просто для объяснения кода
 
-        public event Action CountChanged;
+            public static AccessWaiter OrdersDoesNotMatter()
+            {
+                return new AccessWaiter(false, false, -1);
+            }
+
+            public static AccessWaiter ReleaseWaiterByOrder(int order)
+            {
+                return new AccessWaiter(true, false, order);
+            }
+
+            public static AccessWaiter CreateWaiterForOrder(int order)
+            {
+                return new AccessWaiter(false, true, order);
+            }
+
+            private AccessWaiter(bool orderMattersForReleasingAThread, bool orderMattersForWaiting, int order)
+            {
+                OrderMattersForReleasingAThread = orderMattersForReleasingAThread;
+                OrderMattersForWaiting = orderMattersForWaiting;
+                Order = order;
+            }
+
+            public bool OrderMattersForReleasingAThread { get; }
+            public bool OrderMattersForWaiting { get; }
+            public int Order { get; }
+
+            [ThreadStatic] private static ManualResetEvent ResetEventForThisThread;
+
+
+            public WaitHandle CreateWaiter(WaitersCollection waitersCollection)
+            {
+                if (ResetEventForThisThread == null)
+                    ResetEventForThisThread = new ManualResetEvent(false);
+                else
+                    ResetEventForThisThread.Reset();
+
+                waitersCollection.CreateWaiter(OrderMattersForWaiting ? Order : (int?) null, ResetEventForThisThread);
+
+                return ResetEventForThisThread;
+            }
+
+            public void ReleaseWaiter(WaitersCollection waitersCollection)
+            {
+                waitersCollection.ReleaseWaiter(OrderMattersForReleasingAThread ? Order : (int?) null);
+            }
+        }
     }
 }

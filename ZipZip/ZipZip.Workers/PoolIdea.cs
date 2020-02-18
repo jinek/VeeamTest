@@ -5,7 +5,7 @@ namespace ZipZip.Workers
 {
     internal static class PoolIdea
     {
-        public static void ThreadSafeAccessToPool(WaitersCollection.AccessWaiter accessWaiter,
+        public static void ThreadSafeAccessToPool(in WaitersCollection.AccessWaiter accessWaiter,
             Func<(bool shouldWait,bool releaseWaiter)> waitCondition,
             WaitersCollection waitersToWaitWaitersCollection,
             WaitersCollection waitersToReleaseWaitersCollection
@@ -15,13 +15,12 @@ namespace ZipZip.Workers
             
             while (waitConditionWait)
             {
-                bool shouldWait;
                 bool releaseWaiter;
-
                 WaitHandle manualResetEvent=null;
                 
                 using (waitersToWaitWaitersCollection.LockOtherThreadsAccessingThisCollection())
                 {
+                    bool shouldWait;
                     (shouldWait, releaseWaiter) = waitCondition();
                     
                     waitConditionWait = shouldWait;

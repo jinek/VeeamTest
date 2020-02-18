@@ -50,9 +50,9 @@
     <Compile Include="ZipZipWorkerBase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ZipZip.Lockers\ZipZip.Lockers.csproj">
+    <ProjectReference Include="..\ZipZip.Threading\ZipZip.Threading.csproj">
       <Project>{f59d7bde-143f-49c3-9078-818c795f7f9d}</Project>
-      <Name>ZipZip.Lockers</Name>
+      <Name>ZipZip.Threading</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

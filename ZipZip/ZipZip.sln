@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Runner", "ZipZip.Run
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Workers", "ZipZip.Workers\ZipZip.Workers.csproj", "{B6C0C106-EA0A-485A-B4E0-D2CB8CA94FD5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Lockers", "ZipZip.Lockers\ZipZip.Lockers.csproj", "{F59D7BDE-143F-49C3-9078-818C795F7F9D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Threading", "ZipZip.Threading\ZipZip.Threading.csproj", "{F59D7BDE-143F-49C3-9078-818C795F7F9D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Exceptions", "ZipZip.Exceptions\ZipZip.Exceptions.csproj", "{491413E0-7FFC-42C9-85EE-56DE4485E776}"
 EndProject

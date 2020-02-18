@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace ZipZip.Lockers
+namespace ZipZip.Threading
 {
+    /// <summary>
+    ///     Not thread-safe
+    /// </summary>
     public class ThreadManager : IDisposable
     {
         private readonly List<Thread> _threads = new List<Thread>();
@@ -34,7 +37,7 @@ namespace ZipZip.Lockers
                 }
                 catch (ThreadStateException)
                 {
-                    throw new NotImplementedException();
+                    throw new InvalidOperationException("Currently we allow to dispose manager only after everything is has finished");
                 }
 
                 try
@@ -43,14 +46,14 @@ namespace ZipZip.Lockers
                 }
                 catch (ThreadInterruptedException)
                 {
-                    throw new NotImplementedException();
+                    throw new InvalidOperationException("Currently we allow to dispose manager only after everything is has finished");
                 }
             }
         }
 
         ~ThreadManager()
         {
-            ReleaseUnmanagedResources();
+            throw new InvalidOperationException("This manager is half implemented and must be Disposed explicitly");
         }
     }
 }

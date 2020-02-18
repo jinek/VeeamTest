@@ -1,22 +1,22 @@
 using System;
 using System.Threading;
 
-namespace ZipZip.Lockers
+namespace ZipZip.Threading
 {
-    public class Locker
+    public class ThreadLocker
     {
         private readonly object _lockObject = new object();
 
-        public IDisposable Lock()
+        public LockerRelease Lock()
         {
             return new LockerRelease(_lockObject);
         }
 
-        private class LockerRelease : IDisposable
+        public struct LockerRelease : IDisposable
         {
             private readonly object _lockObject;
 
-            public LockerRelease(object lockObject)
+            internal LockerRelease(object lockObject)
             {
                 _lockObject = lockObject;
                 Monitor.Enter(_lockObject);
@@ -24,18 +24,7 @@ namespace ZipZip.Lockers
 
             public void Dispose()
             {
-                ReleaseUnmanagedResources();
-                GC.SuppressFinalize(this);
-            }
-
-            private void ReleaseUnmanagedResources()
-            {
                 Monitor.Exit(_lockObject);
-            }
-
-            ~LockerRelease()
-            {
-                ReleaseUnmanagedResources();
             }
         }
     }

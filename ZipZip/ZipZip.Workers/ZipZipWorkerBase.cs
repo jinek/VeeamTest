@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using ZipZip.Lockers;
+using ZipZip.Threading;
 
 namespace ZipZip.Workers
 {
@@ -25,8 +25,8 @@ namespace ZipZip.Workers
             
             _outputStream = new FileStream(outputFilePath, FileMode.Create);
             
-            _inputBuffer = new AccessBlockingDataPool<TInput>(BufferSize,false,this);
-            _outputBuffer = new AccessBlockingDataPool<TOutput>(BufferSize, true,this);
+            _inputBuffer = new AccessBlockingDataPool<TInput>(BufferSize,false);
+            _outputBuffer = new AccessBlockingDataPool<TOutput>(BufferSize, true);
         }
 
         private static int BufferSize => MaxWorkerThreads * BufferSizeFromCPUNumberMultiplier;
@@ -40,6 +40,7 @@ namespace ZipZip.Workers
         public void Dispose()
         {
             //dispose тут по сути по приколу, его можно вызывать только по завершению вызова Process, для нашей задачи это подходит
+            //Что бы можно было вызвать в любое время - нужно имплементировать interupt в WriteOutput
             _threadManager.Dispose();
             _inputStream.Dispose();
             _outputStream.Dispose();
@@ -76,8 +77,7 @@ namespace ZipZip.Workers
                     while (true)
                     {
                         TInput chunk = _inputBuffer.Pop(out int order);
-
-                        WritePool();
+                        
                         TOutput processedChunk = ProcessChunk(chunk);
 
                         _outputBuffer.Add(processedChunk, order);
@@ -95,16 +95,7 @@ namespace ZipZip.Workers
                     WriteChunk(_outputStream,chunk);
                 }
         }
-        
-        private void WritePool()
-        {
-            int outputCount = _outputBuffer._bag.Count;
-            int inputCount = _inputBuffer._bag.Count;
-
-            Debug.WriteLine(string.Concat(Enumerable.Repeat('|', inputCount)).PadRight(BufferSize,'.') +
-                            "            " + string.Concat(Enumerable.Repeat('|', outputCount))
-                                .PadRight(BufferSize,'.'));
-        }
+       
 
         protected abstract bool ReadChunk(Stream stream,out TInput chunk);
 
