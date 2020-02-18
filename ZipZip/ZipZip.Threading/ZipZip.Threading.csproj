@@ -38,10 +38,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PrimitiveThreadLockers\ReadWriteThreadLocker.cs" />
+    <Compile Include="PrimitiveThreadLockers\ThreadLocker.cs" />
     <Compile Include="SimpleConcurrentDictionary.cs" />
-    <Compile Include="ThreadLocker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReadWriteThreadLocker.cs" />
     <Compile Include="ThreadManager.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

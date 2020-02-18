@@ -24,7 +24,7 @@ namespace ZipZip.Workers
 
         protected override bool ReadChunk(Stream _inputStream, out byte[] bytes)
         {
-            bytes = _inputStream.ReadAndTrancuateIfNeeded(BlockSize);
+            bytes = _inputStream.ReadAndTruncateIfNeeded(BlockSize);
             return bytes.Length != 0;
         }
 

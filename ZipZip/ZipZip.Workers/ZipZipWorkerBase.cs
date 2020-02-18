@@ -8,10 +8,10 @@ namespace ZipZip.Workers
 {
     internal abstract class ZipZipWorkerBase<TInput,TOutput> : IZipZipWorker
     {
-        public readonly AccessBlockingDataPool<TInput> _inputBuffer;
+        public readonly AccessBlockingDataBuffer<TInput> _inputBuffer;
         private readonly FileStream _inputStream;
 
-        private readonly AccessBlockingDataPool<TOutput> _outputBuffer; 
+        private readonly AccessBlockingDataBuffer<TOutput> _outputBuffer; 
 
         private readonly FileStream _outputStream;
 
@@ -25,8 +25,8 @@ namespace ZipZip.Workers
             
             _outputStream = new FileStream(outputFilePath, FileMode.Create);
             
-            _inputBuffer = new AccessBlockingDataPool<TInput>(BufferSize,false);
-            _outputBuffer = new AccessBlockingDataPool<TOutput>(BufferSize, true);
+            _inputBuffer = new AccessBlockingDataBuffer<TInput>(BufferSize,false);
+            _outputBuffer = new AccessBlockingDataBuffer<TOutput>(BufferSize, true);
         }
 
         private static int BufferSize => MaxWorkerThreads * BufferSizeFromCPUNumberMultiplier;
@@ -76,7 +76,7 @@ namespace ZipZip.Workers
                 {
                     while (true)
                     {
-                        TInput chunk = _inputBuffer.Pop(out int order);
+                        TInput chunk = _inputBuffer.Pull(out int order);
                         
                         TOutput processedChunk = ProcessChunk(chunk);
 
@@ -90,7 +90,7 @@ namespace ZipZip.Workers
                 var order = 0;
                 while (order!=_finishBlock)
                 {
-                    TOutput chunk = _outputBuffer.Pop(order++);
+                    TOutput chunk = _outputBuffer.Pull(order++);
                     
                     WriteChunk(_outputStream,chunk);
                 }

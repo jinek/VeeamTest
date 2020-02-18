@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace ZipZip.Threading
+namespace ZipZip.Threading.PrimitiveThreadLockers
 {
     /// <summary>
     ///     https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock

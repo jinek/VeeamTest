@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace ZipZip.Threading
+namespace ZipZip.Threading.PrimitiveThreadLockers
 {
     public class ThreadLocker
     {

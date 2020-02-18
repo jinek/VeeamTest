@@ -38,10 +38,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccessBlockingDataPool.cs" />
+    <Compile Include="AccessBlockingDataBuffer.cs" />
     <Compile Include="WaitersCollection.cs" />
     <Compile Include="IZipZipWorker.cs" />
-    <Compile Include="PoolIdea.cs" />
+    <Compile Include="BufferIdea.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StreamHelper.cs" />
     <Compile Include="ZipZipCompress.cs" />

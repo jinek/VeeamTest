@@ -10,7 +10,7 @@ namespace ZipZip.Workers
         {
             using (var gZipStream = new GZipStream(chunk, CompressionMode.Decompress))
             {
-                return gZipStream.ReadAndTrancuateIfNeeded(BlockSize);
+                return gZipStream.ReadAndTruncateIfNeeded(BlockSize);
             }
         }
 

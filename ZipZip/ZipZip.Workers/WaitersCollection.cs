@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using ZipZip.Threading;
+using ZipZip.Threading.PrimitiveThreadLockers;
 
 namespace ZipZip.Workers
 {
@@ -49,26 +49,26 @@ namespace ZipZip.Workers
             }
         }
 
-        public readonly struct AccessWaiter
+        public readonly struct WaitersMode
         {
             //эта структура нужно просто для объяснения кода
 
-            public static AccessWaiter OrdersDoesNotMatter()
+            public static WaitersMode OrdersDoesNotMatter()
             {
-                return new AccessWaiter(false, false, -1);
+                return new WaitersMode(false, false, -1);
             }
 
-            public static AccessWaiter ReleaseWaiterByOrder(int order)
+            public static WaitersMode ReleaseWaiterByOrder(int order)
             {
-                return new AccessWaiter(true, false, order);
+                return new WaitersMode(true, false, order);
             }
 
-            public static AccessWaiter CreateWaiterForOrder(int order)
+            public static WaitersMode CreateWaiterForOrder(int order)
             {
-                return new AccessWaiter(false, true, order);
+                return new WaitersMode(false, true, order);
             }
 
-            private AccessWaiter(bool orderMattersForReleasingAThread, bool orderMattersForWaiting, int order)
+            private WaitersMode(bool orderMattersForReleasingAThread, bool orderMattersForWaiting, int order)
             {
                 OrderMattersForReleasingAThread = orderMattersForReleasingAThread;
                 OrderMattersForWaiting = orderMattersForWaiting;

@@ -3,17 +3,17 @@ using System.Threading;
 
 namespace ZipZip.Workers
 {
-    internal static class PoolIdea
+    internal static class BufferIdea
     {
-        public static void ThreadSafeAccessToPool(in WaitersCollection.AccessWaiter accessWaiter,
+        public static void ThreadSafeAccessToBuffer(in WaitersCollection.WaitersMode waitersMode,
             Func<(bool shouldWait,bool releaseWaiter)> waitCondition,
             WaitersCollection waitersToWaitWaitersCollection,
             WaitersCollection waitersToReleaseWaitersCollection
         )
         {
-            bool waitConditionWait = true;
+            bool waitConditionLastResult = true;
             
-            while (waitConditionWait)
+            while (waitConditionLastResult)
             {
                 bool releaseWaiter;
                 WaitHandle manualResetEvent=null;
@@ -23,17 +23,17 @@ namespace ZipZip.Workers
                     bool shouldWait;
                     (shouldWait, releaseWaiter) = waitCondition();
                     
-                    waitConditionWait = shouldWait;
+                    waitConditionLastResult = shouldWait;
 
                     if (shouldWait)
                     {
-                        manualResetEvent = accessWaiter.CreateWaiter(waitersToWaitWaitersCollection);
+                        manualResetEvent = waitersMode.CreateWaiter(waitersToWaitWaitersCollection);
                     }
                 }
 
                 if (releaseWaiter)
                 {
-                    accessWaiter.ReleaseWaiter(waitersToReleaseWaitersCollection);
+                    waitersMode.ReleaseWaiter(waitersToReleaseWaitersCollection);
                 }
 
                 manualResetEvent?.WaitOne();
