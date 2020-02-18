@@ -71,7 +71,7 @@ namespace ZipZip.Exceptions
 
         private static void ApplicationExit()
         {
-            Environment.Exit(-1);
+            Environment.Exit(1);
         }
 
         private const bool IsDebug =
