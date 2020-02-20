@@ -86,11 +86,27 @@ namespace ZipZip.Workers.DataBuffer
                 ? WaitersCollection.WaitersMode.ReleaseWaiterByOrder(order)
                 : WaitersCollection.WaitersMode.OrdersDoesNotMatter();
 
+            bool hasBeenAdded = false;
+            
             BufferIdea.ThreadSafeAccessToBuffer(waitersMode,
                 () =>
                 {
-                    bool shouldWait = !_internalBuffer.AddOrNothingThenAndCheckIfNotFull(order, item);
-                    return (shouldWait, true);
+                    bool shouldWait;
+                    bool justAddedInThisIteration = false;
+                    
+                    //First time, adding item to buffer
+                    if (!hasBeenAdded)
+                    {
+                        shouldWait = !_internalBuffer.AddItemAndCheckNotFull(order, item);
+                        hasBeenAdded = justAddedInThisIteration = true;
+                    }
+                    //next time, only checking if we can release this thread to process next item
+                    else
+                    {
+                        shouldWait = _internalBuffer.IsFull;
+                    }
+
+                    return (shouldWait, justAddedInThisIteration);
                 },
                 _pullWaiters,
                 _addWaiters);
