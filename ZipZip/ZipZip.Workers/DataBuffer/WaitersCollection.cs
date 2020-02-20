@@ -38,7 +38,6 @@ namespace ZipZip.Workers.DataBuffer
         {
             return _threadLocker.Lock();
         }
-
         
         /// <summary>
         ///     Create a waiter, so it can wait. Later, someone, who access buffer from another side can release this waiter
