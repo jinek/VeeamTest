@@ -17,6 +17,17 @@ namespace ZipZip.Threading
 
         private int InitialCapacity { get; }
 
+        public bool IsFull
+        {
+            get
+            {
+                using (_threadLocker.ReadLock())
+                {
+                    return !IsNotFullInternal;
+                }
+            }
+        }
+
         public bool TryRemove(TKey order, out TValue item)
         {
             item = default;
@@ -30,7 +41,7 @@ namespace ZipZip.Threading
             {
                 if (!_dictionary.TryGetValue(order, out item)) return false;
 
-                _dictionary.Remove(order);
+                _dictionary.Remove(order);//todo: можно просто вернуть это
 
                 return true;
             }
@@ -54,15 +65,16 @@ namespace ZipZip.Threading
             }
         }
 
-        public bool AddOrNothingThenAndCheckIfNotFull(TKey order, TValue item)
+        public bool AddItemAndCheckNotFull(TKey order, TValue item)
         {
             using (_threadLocker.WriteLock())
             {
-                if (!_dictionary.ContainsKey(order))
-                    _dictionary.Add(order, item);
+                _dictionary.Add(order, item);
 
-                return _dictionary.Count < InitialCapacity;
+                return IsNotFullInternal;
             }
         }
+
+        private bool IsNotFullInternal => _dictionary.Count < InitialCapacity;
     }
 }
