@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Threading", "ZipZip.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Exceptions", "ZipZip.Exceptions\ZipZip.Exceptions.csproj", "{491413E0-7FFC-42C9-85EE-56DE4485E776}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZip.Tests", "ZipZip.Tests\ZipZip.Tests.csproj", "{083BD7BE-8662-429B-B61C-4BFEC0EF0B6D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{491413E0-7FFC-42C9-85EE-56DE4485E776}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{491413E0-7FFC-42C9-85EE-56DE4485E776}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{491413E0-7FFC-42C9-85EE-56DE4485E776}.Release|Any CPU.Build.0 = Release|Any CPU
+		{083BD7BE-8662-429B-B61C-4BFEC0EF0B6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{083BD7BE-8662-429B-B61C-4BFEC0EF0B6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{083BD7BE-8662-429B-B61C-4BFEC0EF0B6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{083BD7BE-8662-429B-B61C-4BFEC0EF0B6D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

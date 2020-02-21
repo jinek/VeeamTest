@@ -27,8 +27,11 @@ namespace ZipZip.Workers.DataBuffer
         public void AbortWaiters()
         {
             AbortAllThreads = true;
-            foreach (KeyValuePair<int, ManualResetEvent> manualResetEventItem in _dictionary)
+            using (_threadLocker.Lock())
+            {
+                foreach (KeyValuePair<int, ManualResetEvent> manualResetEventItem in _dictionary)
                 manualResetEventItem.Value.Set();
+            }
         }
 
         /// <summary>

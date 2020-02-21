@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using ZipZip.Exceptions;
 using ZipZip.Threading;
 using ZipZip.Workers.DataBuffer;
 using ZipZip.Workers.Helpers;
@@ -22,8 +23,8 @@ namespace ZipZip.Workers.Processing
         private readonly FileStream _inputStream;
         private readonly AccessBlockingDataBuffer<TOutput> _outputBuffer;
         private readonly FileStream _outputStream;
-        private readonly ThreadManager _threadManager = new ThreadManager();
-        private int _finishBlock = -1;
+        private readonly ThreadManager<ProcessingFinishedException> _threadManager = new ThreadManager<ProcessingFinishedException>();
+        private volatile int _finishBlock = -1;
 
         protected ZipZipWorkerBase(string inputFilePath, string outputFilePath)
         {
@@ -55,29 +56,28 @@ namespace ZipZip.Workers.Processing
 
         public void Process()
         {
-            RunReadInputWorker();
             RunZippingWorkers();
-            WriteOutput();
+            RunWriteOutputWorker();
+            RunReading();
         }
 
-        private void RunReadInputWorker()
+        private void RunReading()
         {
-            _threadManager.RunThread(() =>
+            int order = 0;
+            try
             {
-                int order = 0;
-                try
-                {
-                    while (ReadChunk(_inputStream, out TInput chunk))
-                        _inputBuffer.Add(chunk, order++);
-                }
-                catch (Exception exception)
-                {
-                    exception.ConvertFileExceptions();
-                    throw;
-                }
+                while (ReadChunk(_inputStream, out TInput chunk))
+                    _inputBuffer.Add(chunk, order++);
+            }
+            catch (Exception exception)
+            {
+                exception.ConvertFileExceptions();
+                throw;
+            }
 
-                _finishBlock = order;
-            });
+            _finishBlock = order;
+            
+            _threadManager.WaitAllToFinish();
         }
 
         /// <summary>
@@ -90,52 +90,49 @@ namespace ZipZip.Workers.Processing
             for (int i = 0; i < MaxWorkerThreads; i++)
                 _threadManager.RunThread(() =>
                 {
-                    try
+                    while (true)
                     {
-                        while (true)
+                        TInput chunk = _inputBuffer.Pull(out int order);
+
+                        TOutput processedChunk;
+                        try
                         {
-                            TInput chunk = _inputBuffer.Pull(out int order);
-
-                            TOutput processedChunk;
-                            try
-                            {
-                                processedChunk = ProcessChunk(chunk);
-                            }
-                            catch (Exception exception)
-                            {
-                                exception.ConvertFileExceptions();
-                                throw;
-                            }
-
-                            _outputBuffer.Add(processedChunk, order);
+                            processedChunk = ProcessChunk(chunk);
                         }
-                    }
-                    catch (ProcessingFinishedException)
-                    {
+                        catch (Exception exception)
+                        {
+                            exception.ConvertFileExceptions();
+                            throw;
+                        }
+
+                        _outputBuffer.Add(processedChunk, order);
                     }
                 });
         }
 
-        private void WriteOutput()
+        private void RunWriteOutputWorker()
         {
-            int order = 0;
-            while (order != _finishBlock)
+            _threadManager.RunThread(() =>
             {
-                TOutput chunk = _outputBuffer.Pull(order++);
-
-                try
+                int order = 0;
+                while (_finishBlock == -1 || order < _finishBlock)
                 {
-                    WriteChunk(_outputStream, chunk);
-                }
-                catch (Exception exception)
-                {
-                    exception.ConvertFileExceptions();
-                    throw;
-                }
-            }
+                    TOutput chunk = _outputBuffer.Pull(order++);
 
-            _inputBuffer.AbortAllWaiters();
-            _outputBuffer.AbortAllWaiters();
+                    try
+                    {
+                        WriteChunk(_outputStream, chunk);
+                    }
+                    catch (Exception exception)
+                    {
+                        exception.ConvertFileExceptions();
+                        throw;
+                    }
+                }
+
+                _inputBuffer.AbortAllWaiters();
+                _outputBuffer.AbortAllWaiters();
+            });
         }
 
         /// <summary>
