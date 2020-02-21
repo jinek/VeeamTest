@@ -7,7 +7,7 @@ namespace ZipZip.Threading
     /// <summary>
     ///     Not thread-safe
     /// </summary>
-    public class ThreadManager
+    public class ThreadManager<TProcessAbortedException> where TProcessAbortedException : Exception
     {
         private readonly List<Thread> _threads = new List<Thread>();
 
@@ -16,7 +16,9 @@ namespace ZipZip.Threading
             foreach (Thread thread in _threads)
                 try
                 {
-                    thread.Join();
+                    //not effective solution, but is done locally, no affect to the rest of the code
+                    while(!thread.Join(1000))
+                        thread.Interrupt();
                 }
                 catch (ThreadInterruptedException)
                 {
@@ -27,7 +29,17 @@ namespace ZipZip.Threading
 
         public void RunThread(Action action)
         {
-            var thread = new Thread(o => action())
+            var thread = new Thread(o =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (TProcessAbortedException)
+                {
+                    //similar to ThreadAbortException
+                }
+            })
             {
                 IsBackground = true
             };

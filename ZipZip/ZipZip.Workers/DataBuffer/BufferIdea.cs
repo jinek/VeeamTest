@@ -43,7 +43,14 @@ namespace ZipZip.Workers.DataBuffer
 
                 if (releaseWaiter) waitersMode.ReleaseWaiter(releaseFromThisCollection);
 
-                manualResetEvent?.WaitOne();
+                try
+                {
+                    manualResetEvent?.WaitOne();
+                }
+                catch (ThreadInterruptedException)
+                {
+                    throw new ProcessingFinishedException();
+                }
 
                 if (addToThisCollectionWhenWaiting.AbortAllThreads || releaseFromThisCollection.AbortAllThreads)
                     throw new ProcessingFinishedException();
