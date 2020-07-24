@@ -38,6 +38,11 @@ namespace ZipZip.Workers.DataBuffer
                 throw new InvalidOperationException(
                     $"Call another overload of {nameof(Pull)} and receive {nameof(order)}");
 
+            return PullIncapsulated(order);
+        }
+
+        private T PullIncapsulated(int order)
+        {
             T item = default;
 
             BufferIdea.ThreadSafeAccessToBuffer(WaitersCollection.WaitersMode.CreateWaiterForOrder(order),
